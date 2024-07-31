@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, UploadFile, File
 from models import Molecules
 from rdkit import Chem
 import io
+import os
 import csv
 
 app = FastAPI()
@@ -15,8 +16,8 @@ molecules_db = {
 }
 
 @app.get("/")
-def read_root():
-    return {"Hello": "World"}
+def get_server():
+    return {"server_id": os.getenv("SERVER_ID", "1")}
 
 
 @app.get("/smiles")
