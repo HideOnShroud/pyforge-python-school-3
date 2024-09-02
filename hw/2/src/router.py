@@ -3,6 +3,7 @@ from config import SessionLocal
 from sqlalchemy.orm import Session
 from schemas import MoleculeSchema, RequestMolecule, Response
 import crud
+from logger import logger
 from typing import List
 from substructure_search import substructure
 
@@ -20,14 +21,35 @@ def get_db():
 @router.get("/smiles", response_model=Response[List[MoleculeSchema]])
 async def get(db: Session = Depends(get_db)):
     """
-    Endpoint to retrieve all smiles from the database.
-    Returns a dictionary with all smiles.
+    Endpoint to retrieves all smiles from the database.
     """
     molecules = crud.get_molecules(db)
-    return Response(code="200", status="Success", message="Molecules retrieved", result=molecules)
+    
+    molecules_list = list(molecules)  # Convert generator to a list for logging
+
+    logger.info(f"Retrieved {len(molecules_list)} molecules.")
+
+    return Response(code="200", status="Success", message="Molecules retrieved", result=molecules_list)
 
 
-@router.get("/smiles/{identifier}", response_model=Response[MoleculeSchema])
+@router.get("/smiles/{offset}", response_model=Response[List[MoleculeSchema]])
+async def get(db: Session = Depends(get_db), limit: int = 5, offset: int = 0):
+    """
+    Endpoint to retrieves 5 smiles from the database.
+    Returns smiles based on page each page has 5 smiles, first page is 0.
+    """
+    offset = limit * offset
+    
+    molecules = crud.get_molecules(db, limit, offset)
+    
+    molecules_list = list(molecules)  # Convert generator to a list for logging
+
+    logger.info(f"Retrieved {len(molecules_list)} molecules with limit={limit}")
+
+    return Response(code="200", status="Success", message="Molecules retrieved", result=molecules_list)
+
+
+@router.get("/smile/{identifier}", response_model=Response[MoleculeSchema])
 async def get(identifier: str, db: Session = Depends(get_db)):
     """
     Endpoint to retrieve a specific smile by its identifier.
@@ -44,7 +66,7 @@ async def get(identifier: str, db: Session = Depends(get_db)):
     raise HTTPException(status_code=404, detail="Molecule not found")
 
 
-@router.put("/smiles/{identifier}", response_model=Response[MoleculeSchema])
+@router.put("/smile/{identifier}", response_model=Response[MoleculeSchema])
 async def put(identifier: str, molecule: RequestMolecule, db: Session = Depends(get_db)):
     """
     Endpoint to update an existing smile's information.
@@ -68,7 +90,7 @@ async def put(identifier: str, molecule: RequestMolecule, db: Session = Depends(
         raise HTTPException(status_code=400, detail="Molecule with identifier already exists")
 
 
-@router.delete("/smiles/{identifier}", response_model=Response[None])
+@router.delete("/smile/{identifier}", response_model=Response[None])
 async def delete_molecule(identifier: str, db: Session = Depends(get_db)):
     """
     Endpoint to delete a specific molecule by its identifier.

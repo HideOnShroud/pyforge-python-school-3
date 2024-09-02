@@ -2,12 +2,10 @@ from sqlalchemy.orm import Session
 from rdkit import Chem
 import crud
 
-
 def substructure(db: Session):
     # Fetch all molecules from the database
     molecules = crud.get_molecules(db)
-
-    # Return an empty list if no molecules are found
+    
     if not molecules:
         return []
 
@@ -15,40 +13,43 @@ def substructure(db: Session):
     molecules_dict = {mol.identifier: mol for mol in molecules}
 
     # Create RDKit molecule objects for all molecules
-    molecule_objects = {}
-    for identifier, mol in molecules_dict.items():
-        try:
-            molecule_objects[identifier] = Chem.MolFromSmiles(mol.smile)
-        except Exception as e:
-            # Log or handle the invalid SMILES string here
-            print(f"Error processing SMILES for {identifier}: {e}")
-            molecule_objects[identifier] = None
+    def create_molecule_objects():
+        for identifier, mol in molecules_dict.items():
+            try:
+                yield identifier, Chem.MolFromSmiles(mol.smile)
+            except Exception as e:
+                # Log or handle the invalid SMILES string here
+                print(f"Error processing SMILES for {identifier}: {e}")
+                yield identifier, None
 
-    # Initialize results and substructure matches
-    results = []
-    substructure_matches = {identifier: [] for identifier in molecule_objects}
+    molecule_objects = dict(create_molecule_objects())
 
-    # Check for substructure matches
-    for identifier, mol in molecule_objects.items():
-        if mol is None:
-            continue
+    substructure_matches = {identifier: [] for identifier in molecule_objects if molecule_objects[identifier] is not None}
 
-        for sub_id, sub_mol in molecule_objects.items():
-            if identifier == sub_id or sub_mol is None:
+    def find_substructure_matches():
+        for identifier, mol in molecule_objects.items():
+            if mol is None:
                 continue
 
-            if mol.HasSubstructMatch(sub_mol):
-                substructure_matches[identifier].append({
-                    "identifier": sub_id,
-                    "smile": molecules_dict[sub_id].smile
-                })
+            for sub_id, sub_mol in molecule_objects.items():
+                if identifier == sub_id or sub_mol is None:
+                    continue
 
-    # Prepare the final result list
-    for identifier, matches in substructure_matches.items():
-        if matches:
-            results.append({
-                "identifier": identifier,
-                "substructures": matches
-            })
+                if mol.HasSubstructMatch(sub_mol):
+                    yield identifier, {
+                        "identifier": sub_id,
+                        "smile": molecules_dict[sub_id].smile
+                    }
+
+    for identifier, match in find_substructure_matches():
+        substructure_matches[identifier].append(match)
+
+    results = [
+        {
+            "identifier": identifier,
+            "substructures": matches
+        }
+        for identifier, matches in substructure_matches.items() if matches
+    ]
 
     return results
