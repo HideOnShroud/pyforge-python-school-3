@@ -1,5 +1,5 @@
 from typing import List, Optional, Generic, TypeVar
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 T = TypeVar('T')
@@ -7,8 +7,8 @@ class MoleculeSchema(BaseModel):
     identifier: str
     smile: str
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
+
 
 
 class RequestMolecule(BaseModel):

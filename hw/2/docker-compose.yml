@@ -40,16 +40,23 @@ services:
     tty: true
     stdin_open: true
 
+  redis:
+    image: "redis:alpine"
+    ports:
+      - "6379:6379"
+
   app:
     build: ./src
     depends_on:
       - postgres
+      - redis
     ports:
       - "8000:8000"
     # networks:
     #   - webnet
     environment:
       DATABASE_URL: postgres://admin:password@postgres:5432/drug_db
+      REDIS_URL: redis://redis:6379/0
   # app-2:
   #   build: ./src
   #   depends_on:
@@ -75,6 +82,8 @@ services:
 
 volumes:
   pgdata:
+    driver: local
+  redisdata:
     driver: local
 
 # networks:
