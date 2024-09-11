@@ -46,7 +46,7 @@ services:
       - "6379:6379"
 
   app:
-    build: ./src
+    build: ./app
     depends_on:
       - postgres
       - redis
@@ -58,7 +58,7 @@ services:
       DATABASE_URL: postgres://admin:password@postgres:5432/drug_db
       REDIS_URL: redis://redis:6379/0
   # app-2:
-  #   build: ./src
+  #   build: ./app
   #   depends_on:
   #     - postgres
   #   # ports:
@@ -79,6 +79,14 @@ services:
   #   depends_on:
   #     - app
   #     - app-2
+
+  celery_worker:
+    build: ./app
+    command: celery -A app.celery_worker worker --loglevel=info
+    depends_on:
+      - redis
+    volumes:
+      - .:/app
 
 volumes:
   pgdata:

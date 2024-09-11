@@ -8,6 +8,10 @@ import json
 from logger import logger
 from typing import List
 from substructure_search import substructure
+from tasks import add_task
+from tasks import substructure_search_task
+from celery.result import AsyncResult
+from celery_worker import celery
 
 router = APIRouter()
 
@@ -204,3 +208,44 @@ async def post_csv(csv_file: UploadFile = File(...), db: Session = Depends(get_d
         raise HTTPException(status_code=400, detail=f"Unknown: {e}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Not Valid: {e}")
+
+
+@router.post("/tasks/add")
+async def create_task(x: int, y: int):
+    task = add_task.delay(x, y)
+    return {"task_id": task.id, "status": task.status}
+
+@router.get("/tasks/{task_id}")
+async def get_task_result(task_id: str):
+    task_result = AsyncResult(task_id, app=celery)
+    if task_result.state == 'PENDING':
+        return {"task_id": task_id, "status": "Task is still processing"}
+    elif task_result.state == 'SUCCESS':
+        return {"task_id": task_id, "status": "Task completed", "result": task_result.result}
+    else:
+        return {"task_id": task_id, "status": task_result.state}
+    
+
+@router.post("/substructures/start")
+async def start_substructure_search(db: Session = Depends(get_db)):
+    """
+    Start an asynchronous substructure search task.
+    """
+    db_url = 'your_database_url'  # Replace with your actual database URL
+    task = substructure_search_task.delay(db_url)
+    return {"task_id": task.id}
+
+@router.get("/substructures/status/{task_id}")
+async def get_substructure_search_status(task_id: str):
+    """
+    Get the status and result of the substructure search task.
+    """
+    task_result = AsyncResult(task_id, app=celery)
+    if task_result.state == 'PENDING':
+        return {"task_id": task_id, "status": "Task is still processing"}
+    elif task_result.state == 'SUCCESS':
+        return {"task_id": task_id, "status": "Task completed", "result": task_result.result}
+    elif task_result.state == 'FAILURE':
+        return {"task_id": task_id, "status": "Task failed", "result": str(task_result.info)}
+    else:
+        return {"task_id": task_id, "status": task_result.state}

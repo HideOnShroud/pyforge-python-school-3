@@ -11,10 +11,6 @@ RUN conda install conda-forge::rdkit
 COPY requirements.txt .
 RUN pip3 install -r requirements.txt
 
-# Activate environment and set it as default
-RUN echo "conda activate myenv" >> ~/.bashrc
-ENV PATH /opt/conda/envs/myenv/bin:$PATH
-
 # Copy application code
 COPY . .
 
