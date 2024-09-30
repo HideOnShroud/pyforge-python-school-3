@@ -1,0 +1,8 @@
+# Ignore everything
+*
+
+# But do not ignore the .gitignore file itself
+!.gitignore
+
+# Allow main.py to be tracked
+!main.py
