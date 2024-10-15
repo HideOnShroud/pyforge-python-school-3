@@ -1,0 +1,9 @@
+name: myenv
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - boto3
+  - pytest
+  - flake8
+  - rdkit

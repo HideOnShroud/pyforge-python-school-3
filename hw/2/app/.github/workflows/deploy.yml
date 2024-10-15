@@ -1,0 +1,34 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up SSH
+        uses: appleboy/ssh-action@v0.1.8
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ip-10-0-1-178
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            # Install dependencies
+            sudo apt-get update
+            sudo apt-get install -y python3 python3-pip
+            pip3 install -r /home/ubuntu/requirements.txt
+            
+            # Start your application (adjust command based on your app)
+            python3 /home/ubuntu/app.py &
+
+      - name: Upload code
+        run: scp -i ${{ secrets.EC2_SSH_KEY }} -o StrictHostKeyChecking=no -r ./* ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/
