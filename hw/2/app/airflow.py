@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from rdkit import Chem
 from rdkit.Chem import Descriptors, Crippen, rdMolDescriptors
 import boto3
+from models import Molecule
 from datetime import datetime
 import os
 
@@ -19,10 +20,10 @@ SessionLocal = sessionmaker(bind=engine)
 load_dotenv("/.env")
 
 # Load S3 configurations
-S3_BUCKET = os.getenv("S3_BUCKET")
-S3_ACCESS_KEY = os.getenv("S3_ACCESS_KEY")
-S3_SECRET_KEY = os.getenv("S3_SECRET_KEY")
-S3_ENDPOINT = os.getenv("S3_ENDPOINT")
+S3_BUCKET = os.getenv("AWS_BUCKET_NAME")
+S3_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID")
+S3_SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+S3_ENDPOINT = os.getenv("AWS_BUCKET_ENDPOINT")
 
 # Initialize Minio client or boto3 S3
 s3_client = boto3.client(

@@ -88,10 +88,34 @@ services:
     volumes:
       - .:/app
 
+  airflow_webserver:
+    image: apache/airflow:2.7.0
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://admin:password@postgres:5432/drug_db
+      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://admin:password@postgres:5432/drug_db
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
+      - airflow_plugins:/opt/airflow/plugins
+    command: bash -c "airflow db init && airflow webserver"
+    restart: always
+
 volumes:
   pgdata:
     driver: local
   redisdata:
+    driver: local
+  airflow_logs:
+    driver: local
+  airflow_plugins:
     driver: local
 
 # networks:

@@ -3,6 +3,7 @@ import pytest
 import requests
 import time
 from main import app, molecules_db
+from app import lambda_handler
 from models import Molecules
 import io
 
@@ -167,3 +168,16 @@ def test_upload_csv_with_invalid_smiles():
     assert len(response.json()["added_molecules"]) == 1
     assert "m8" in molecules_db
     assert molecules_db["m8"].smile == "INVALID"  
+    
+
+def test_lambda_handler():
+    event = {"name": "Test"}
+    result = lambda_handler(event, None)
+    assert result['statusCode'] == 200
+    assert result['body'] == 'Hello, Test!'
+
+def test_lambda_handler_default():
+    event = {}
+    result = lambda_handler(event, None)
+    assert result['statusCode'] == 200
+    assert result['body'] == 'Hello, World!'
